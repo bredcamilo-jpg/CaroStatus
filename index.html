@@ -350,6 +350,18 @@
   const PASS = "rojas";
   const SESSION_KEY = "caro_session";
 
+  // ---------- LINKS (data) ----------
+  const LINKS_KEY = "caro_links";
+  const DEFAULT_LINKS = [
+    { id: 1, description: "calendar.google", url: "https://calendar.google.com", priority: 1, type: "Link" },
+    { id: 2, description: "bricksmotorsetsd...", url: "https://bricksmotorsets.dk", priority: 2, type: "Link" },
+    { id: 3, description: "chatgpt.com bricks", url: "https://chatgpt.com", priority: 3, type: "AI Tool" },
+    { id: 4, description: "keep.google", url: "https://keep.google.com", priority: 4, type: "Link" },
+    { id: 5, description: "hvidbjerg bank", url: "https://www.hvidbjergbank.dk", priority: 5, type: "Link" },
+    { id: 6, description: "chatgpt", url: "https://chatgpt.com", priority: 6, type: "AI Tool" },
+    { id: 7, description: "DBA 1-LEGO", url: "https://www.dba.dk", priority: 7, type: "Link" }
+  ];
+
   function hasValidSession(){
     return localStorage.getItem(SESSION_KEY) === '1' || sessionStorage.getItem(SESSION_KEY) === '1';
   }
@@ -582,18 +594,7 @@
     svg.appendChild(dot);
   }
 
-  // ---------- LINKS ----------
-  const LINKS_KEY = "caro_links";
-  const DEFAULT_LINKS = [
-    { id: 1, description: "calendar.google", url: "https://calendar.google.com", priority: 1, type: "Link" },
-    { id: 2, description: "bricksmotorsetsd...", url: "https://bricksmotorsets.dk", priority: 2, type: "Link" },
-    { id: 3, description: "chatgpt.com bricks", url: "https://chatgpt.com", priority: 3, type: "AI Tool" },
-    { id: 4, description: "keep.google", url: "https://keep.google.com", priority: 4, type: "Link" },
-    { id: 5, description: "hvidbjerg bank", url: "https://www.hvidbjergbank.dk", priority: 5, type: "Link" },
-    { id: 6, description: "chatgpt", url: "https://chatgpt.com", priority: 6, type: "AI Tool" },
-    { id: 7, description: "DBA 1-LEGO", url: "https://www.dba.dk", priority: 7, type: "Link" }
-  ];
-
+  // ---------- LINKS (logic) ----------
   let editingLinkId = null;
 
   function loadLinks(){
