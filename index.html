@@ -73,6 +73,15 @@
     outline:none;
   }
   .field input:focus{ border-color:var(--accent); }
+  .remember-field{
+    display:flex; align-items:center; gap:8px; margin-bottom:20px;
+  }
+  .remember-field input[type="checkbox"]{
+    width:15px; height:15px; accent-color:var(--accent); cursor:pointer;
+  }
+  .remember-field label{
+    font-size:13px; color:var(--text-dim); cursor:pointer; user-select:none;
+  }
   #login-btn{
     width:100%; padding:12px; border:none; border-radius:8px; cursor:pointer;
     background:var(--accent); color:#0f1720; font-weight:600; font-size:14px;
@@ -237,6 +246,10 @@
       <label for="pass">Adgangskode</label>
       <input id="pass" type="password" autocomplete="current-password" />
     </div>
+    <div class="remember-field">
+      <input id="remember-me" type="checkbox" checked />
+      <label for="remember-me">Husk mig</label>
+    </div>
     <button id="login-btn">Log ind</button>
     <div id="login-error">Forkert brugernavn eller adgangskode.</div>
   </div>
@@ -335,7 +348,11 @@
 (function(){
   const USER = "camilo";
   const PASS = "rojas";
-  const SESSION_KEY = "watt_status_session";
+  const SESSION_KEY = "caro_session";
+
+  function hasValidSession(){
+    return localStorage.getItem(SESSION_KEY) === '1' || sessionStorage.getItem(SESSION_KEY) === '1';
+  }
 
   const loginScreen = document.getElementById('login-screen');
   const dashboard = document.getElementById('dashboard');
@@ -358,7 +375,14 @@
     const u = document.getElementById('user').value.trim().toLowerCase();
     const p = document.getElementById('pass').value;
     if(u === USER && p === PASS){
-      sessionStorage.setItem(SESSION_KEY, '1');
+      const remember = document.getElementById('remember-me').checked;
+      if(remember){
+        localStorage.setItem(SESSION_KEY, '1');
+        sessionStorage.removeItem(SESSION_KEY);
+      } else {
+        sessionStorage.setItem(SESSION_KEY, '1');
+        localStorage.removeItem(SESSION_KEY);
+      }
       loginError.style.display = 'none';
       showDashboard();
     } else {
@@ -371,11 +395,12 @@
   });
 
   logoutBtn.addEventListener('click', function(){
+    localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
     showLogin();
   });
 
-  if(sessionStorage.getItem(SESSION_KEY) === '1'){
+  if(hasValidSession()){
     showDashboard();
   }
 
