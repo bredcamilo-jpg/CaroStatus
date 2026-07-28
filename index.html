@@ -161,6 +161,9 @@
   }
   .links-row::-webkit-scrollbar{ height:6px; }
   .links-row::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+  .links-error-msg{
+    display:none; margin-top:10px; font-size:11.5px; color:var(--expensive);
+  }
 
   .link-card{
     flex:0 0 auto; width:78px; display:flex; flex-direction:column; align-items:center;
@@ -267,6 +270,7 @@
     <div class="links-card">
       <div class="links-head"><h2>🔗 LINKS</h2></div>
       <div class="links-row" id="links-row"></div>
+      <div id="links-error" class="links-error-msg">Couldn't sync links right now.</div>
     </div>
 
     <div id="load-msg">Loading prices…</div>
@@ -344,22 +348,34 @@
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const USER = "camilo";
   const PASS = "rojas";
   const SESSION_KEY = "caro_session";
 
+  // ---------- SUPABASE ----------
+  const SUPABASE_URL = "https://iwjnimpvjyjcnmotmgzq.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_5D8OQKBDgh3wci7PG7qe2A_zRX1dFtM";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const linksErrorEl = document.getElementById('links-error');
+  function showLinksError(){ linksErrorEl.style.display = 'block'; }
+  function hideLinksError(){ linksErrorEl.style.display = 'none'; }
+
   // ---------- LINKS (data) ----------
-  const LINKS_KEY = "caro_links";
+  // Legacy localStorage key from before the Supabase migration; wiped once to clean up old devices.
+  localStorage.removeItem("caro_links");
+
   const DEFAULT_LINKS = [
-    { id: 1, description: "calendar.google", url: "https://calendar.google.com", priority: 1, type: "Link" },
-    { id: 2, description: "bricksmotorsetsd...", url: "https://bricksmotorsets.dk", priority: 2, type: "Link" },
-    { id: 3, description: "chatgpt.com bricks", url: "https://chatgpt.com", priority: 3, type: "AI Tool" },
-    { id: 4, description: "keep.google", url: "https://keep.google.com", priority: 4, type: "Link" },
-    { id: 5, description: "hvidbjerg bank", url: "https://www.hvidbjergbank.dk", priority: 5, type: "Link" },
-    { id: 6, description: "chatgpt", url: "https://chatgpt.com", priority: 6, type: "AI Tool" },
-    { id: 7, description: "DBA 1-LEGO", url: "https://www.dba.dk", priority: 7, type: "Link" }
+    { description: "calendar.google", url: "https://calendar.google.com", priority: 1, type: "Link" },
+    { description: "bricksmotorsetsd...", url: "https://bricksmotorsets.dk", priority: 2, type: "Link" },
+    { description: "chatgpt.com bricks", url: "https://chatgpt.com", priority: 3, type: "AI Tool" },
+    { description: "keep.google", url: "https://keep.google.com", priority: 4, type: "Link" },
+    { description: "hvidbjerg bank", url: "https://www.hvidbjergbank.dk", priority: 5, type: "Link" },
+    { description: "chatgpt", url: "https://chatgpt.com", priority: 6, type: "AI Tool" },
+    { description: "DBA 1-LEGO", url: "https://www.dba.dk", priority: 7, type: "Link" }
   ];
 
   function hasValidSession(){
@@ -597,22 +613,58 @@
   // ---------- LINKS (logic) ----------
   let editingLinkId = null;
 
-  function loadLinks(){
-    const raw = localStorage.getItem(LINKS_KEY);
-    if(!raw){
-      localStorage.setItem(LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
-      return DEFAULT_LINKS.slice();
-    }
+  async function loadLinks(){
     try{
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : DEFAULT_LINKS.slice();
-    }catch(e){
-      return DEFAULT_LINKS.slice();
+      let { data, error } = await supabase
+        .from('links')
+        .select('*')
+        .order('priority', { ascending: true });
+      if(error) throw error;
+
+      if(!data || data.length === 0){
+        const { error: insertError } = await supabase.from('links').insert(DEFAULT_LINKS);
+        if(insertError) throw insertError;
+        const reselect = await supabase
+          .from('links')
+          .select('*')
+          .order('priority', { ascending: true });
+        if(reselect.error) throw reselect.error;
+        data = reselect.data || [];
+      }
+
+      hideLinksError();
+      return data;
+    }catch(err){
+      console.error('Failed to load links from Supabase', err);
+      showLinksError();
+      return [];
     }
   }
 
-  function saveLinks(links){
-    localStorage.setItem(LINKS_KEY, JSON.stringify(links));
+  async function upsertLink(link){
+    try{
+      const { error } = await supabase.from('links').upsert(link);
+      if(error) throw error;
+      hideLinksError();
+      return true;
+    }catch(err){
+      console.error('Failed to save link to Supabase', err);
+      showLinksError();
+      return false;
+    }
+  }
+
+  async function deleteLink(id){
+    try{
+      const { error } = await supabase.from('links').delete().eq('id', id);
+      if(error) throw error;
+      hideLinksError();
+      return true;
+    }catch(err){
+      console.error('Failed to delete link from Supabase', err);
+      showLinksError();
+      return false;
+    }
   }
 
   function hashColor(str){
@@ -622,10 +674,10 @@
     return `hsl(${hue}, 55%, 55%)`;
   }
 
-  function renderLinks(){
+  async function renderLinks(){
     const row = document.getElementById('links-row');
+    const links = await loadLinks();
     row.innerHTML = '';
-    const links = loadLinks().slice().sort((a,b)=>a.priority-b.priority);
 
     links.forEach(link=>{
       const card = document.createElement('div');
@@ -705,7 +757,7 @@
     if(e.target === linkModalOverlay) closeLinkModal();
   });
 
-  linkSaveBtn.addEventListener('click', function(){
+  linkSaveBtn.addEventListener('click', async function(){
     const description = linkDescriptionInput.value.trim();
     const url = linkUrlInput.value.trim();
     let priority = parseInt(linkPriorityInput.value, 10);
@@ -715,28 +767,24 @@
 
     if(!description || !url) return;
 
-    const links = loadLinks();
-    if(editingLinkId !== null){
-      const idx = links.findIndex(l => l.id === editingLinkId);
-      if(idx !== -1){
-        links[idx] = { id: editingLinkId, description, url, priority, type };
-      }
-    } else {
-      const newId = Date.now();
-      links.push({ id: newId, description, url, priority, type });
+    const payload = { description, url, priority, type };
+    if(editingLinkId !== null) payload.id = editingLinkId;
+
+    const ok = await upsertLink(payload);
+    if(ok){
+      await renderLinks();
+      closeLinkModal();
     }
-    saveLinks(links);
-    renderLinks();
-    closeLinkModal();
   });
 
-  linkDeleteBtn.addEventListener('click', function(){
+  linkDeleteBtn.addEventListener('click', async function(){
     if(editingLinkId === null) return;
     if(!confirm('Delete this link?')) return;
-    const links = loadLinks().filter(l => l.id !== editingLinkId);
-    saveLinks(links);
-    renderLinks();
-    closeLinkModal();
+    const ok = await deleteLink(editingLinkId);
+    if(ok){
+      await renderLinks();
+      closeLinkModal();
+    }
   });
 })();
 </script>
