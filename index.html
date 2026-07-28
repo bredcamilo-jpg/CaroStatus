@@ -284,10 +284,20 @@
     const url = `https://api.energidataservice.dk/dataset/DayAheadPrices?start=${start}&end=${end}&filter={"PriceArea":["DK1"]}&sort=TimeDK asc&limit=0`;
 
     try{
-      const res = await fetch(url);
-      if(!res.ok) throw new Error('bad response');
-      const data = await res.json();
-      const records = (data.records || []).filter(r => r.TimeDK && r.TimeDK.slice(0,10) === start);
+      let data;
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('bad response');
+        data = await res.json();
+      }catch(directErr){
+        console.warn('Direct fetch failed, retrying via CORS proxy', directErr);
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl);
+        if(!res.ok) throw new Error('bad response (proxy)');
+        data = await res.json();
+      }
+
+      const records = data.records || [];
       if(records.length === 0) throw new Error('no records');
 
       loadMsg.style.display = 'none';
@@ -306,18 +316,40 @@
     return dkkMwh / 10; // DKK/MWh / 1000 * 100 øre = /10
   }
 
+  function recordValue(r){
+    const dkk = (r.DayAheadPriceDKK ?? r.SpotPriceDKK);
+    return (dkk !== undefined && dkk !== null)
+      ? dkk / 10
+      : eurMwhToOreKwh(r.DayAheadPriceEUR ?? r.PriceEUR ?? 0);
+  }
+
   function renderDashboard(records, dateStr){
-    const prices = records.map(r => {
-      const dkk = (r.DayAheadPriceDKK ?? r.SpotPriceDKK);
-      const val = (dkk !== undefined && dkk !== null)
-        ? dkk / 10
-        : eurMwhToOreKwh(r.DayAheadPriceEUR ?? r.PriceEUR ?? 0);
-      return { hour: r.TimeDK.slice(11,16), value: val };
+    // El dataset trae registros cada 15 min (96/día); se agrupan en 24 horas promediando los 4 cuartos de cada hora
+    const hourly = [];
+    for(let h=0; h<24; h++) hourly.push({ hour: String(h).padStart(2,'0')+':00', values: [] });
+
+    records.forEach(r=>{
+      const t = new Date(r.TimeDK);
+      const h = t.getHours();
+      if(hourly[h]) hourly[h].values.push(recordValue(r));
     });
 
+    const prices = hourly
+      .filter(h => h.values.length > 0)
+      .map(h => ({ hour: h.hour, value: h.values.reduce((a,b)=>a+b,0)/h.values.length }));
+
+    // Para el precio "now" se usa el registro de 15 min más cercano a la hora actual, no el promedio horario
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentIdx = Math.min(currentHour, prices.length-1);
+    let nearestRecord = null, nearestDiff = Infinity;
+    records.forEach(r=>{
+      const t = new Date(r.TimeDK);
+      const diff = Math.abs(t - now);
+      if(diff < nearestDiff){ nearestDiff = diff; nearestRecord = r; }
+    });
+
+    const nowHourLabel = nearestRecord ? new Date(nearestRecord.TimeDK).toTimeString().slice(0,5) : '--:--';
+    let currentIdx = prices.findIndex(p => p.hour === (nearestRecord ? String(new Date(nearestRecord.TimeDK).getHours()).padStart(2,'0')+':00' : null));
+    if(currentIdx === -1) currentIdx = Math.min(now.getHours(), prices.length-1);
 
     const values = prices.map(p=>p.value);
     const avg = values.reduce((a,b)=>a+b,0)/values.length;
@@ -326,8 +358,8 @@
     const minIdx = values.indexOf(min);
     const maxIdx = values.indexOf(max);
 
-    const nowVal = prices[currentIdx] ? prices[currentIdx].value : avg;
-    document.getElementById('now-hour').textContent = prices[currentIdx] ? prices[currentIdx].hour : '--:--';
+    const nowVal = nearestRecord ? recordValue(nearestRecord) : avg;
+    document.getElementById('now-hour').textContent = nowHourLabel;
     document.getElementById('now-price').textContent = nowVal.toFixed(1);
 
     const tagEl = document.getElementById('now-tag');
