@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Status — Electricity Price DK1</title>
+<title>CARO STATUS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0f1720;
@@ -177,16 +177,20 @@
   }
   .link-avatar-clip{
     position:absolute; inset:0; border-radius:12px; overflow:hidden;
+    background-color:#0d0d0d;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.3px);
+    background-size:4px 4px;
   }
   .link-marquee-text{
     position:absolute; top:50%; left:0; white-space:nowrap;
-    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:10px; color:#0f1720;
-    transform:translateY(-50%) translateX(100%);
+    font-family:'Press Start 2P', 'IBM Plex Mono', monospace; font-size:13px;
+    letter-spacing:1px; text-shadow:0 0 4px currentColor, 0 0 8px currentColor;
+    transform:translateY(-50%) translateX(0%);
     animation-name:marquee-scroll; animation-timing-function:linear; animation-iteration-count:infinite;
   }
   @keyframes marquee-scroll{
-    0%{ transform:translateY(-50%) translateX(100%); }
-    100%{ transform:translateY(-50%) translateX(-100%); }
+    0%{ transform:translateY(-50%) translateX(0%); }
+    100%{ transform:translateY(-50%) translateX(-50%); }
   }
   .link-dot{
     position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-radius:50%;
@@ -265,9 +269,11 @@
     font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--text-dim); white-space:nowrap;
   }
   #browser-frame-outer{
-    width:100%; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--panel-2);
+    position:relative; width:100%; height:520px; overflow:hidden;
+    border:1px solid var(--line); border-radius:10px; background:var(--panel-2);
   }
   #browser-frame{
+    position:absolute; top:0; left:0;
     width:100%; height:520px; border:0; display:block;
     transform-origin: top left;
   }
@@ -311,7 +317,7 @@
     <div class="top-row">
       <div>
         <div class="eyebrow">Camilo · Vildbjerg · DK1</div>
-        <h1>Electricity price today</h1>
+        <h1>CARO STATUS</h1>
       </div>
       <button id="logout-btn">Log out</button>
     </div>
@@ -729,11 +735,11 @@
     }
   }
 
-  function hashColor(str){
+  const LED_COLORS = ['#39FF14', '#FFD700', '#FF3131'];
+  function hashLedColor(str){
     let hash = 0;
     for(let i=0;i<str.length;i++){ hash = str.charCodeAt(i) + ((hash<<5)-hash); }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 55%, 55%)`;
+    return LED_COLORS[Math.abs(hash) % LED_COLORS.length];
   }
 
   async function renderLinks(){
@@ -747,16 +753,15 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'link-avatar';
-      avatar.style.background = hashColor(link.description || '');
 
       const clip = document.createElement('div');
       clip.className = 'link-avatar-clip';
       const marquee = document.createElement('span');
       marquee.className = 'link-marquee-text';
-      marquee.textContent = link.description || '';
-      const textLen = (link.description || '').length;
-      const duration = Math.min(12, Math.max(8, 8 + textLen * 0.15));
-      marquee.style.animationDuration = duration + 's';
+      const text = link.description || '';
+      const unit = text + ' • ';
+      marquee.textContent = unit + unit;
+      marquee.style.color = hashLedColor(text);
       clip.appendChild(marquee);
       avatar.appendChild(clip);
 
@@ -780,6 +785,12 @@
       });
 
       row.appendChild(card);
+
+      // scrollWidth only reflects real layout once attached to the live DOM (row is already in document)
+      const unitWidthPx = marquee.scrollWidth / 2;
+      const PX_PER_SEC = 45;
+      const duration = Math.min(15, Math.max(3, unitWidthPx / PX_PER_SEC));
+      marquee.style.animationDuration = duration + 's';
     });
 
     const addCard = document.createElement('div');
@@ -862,7 +873,6 @@
   // ---------- EMBEDDED BROWSER ----------
   const browserUrlInput = document.getElementById('browser-url-input');
   const browserFrame = document.getElementById('browser-frame');
-  const browserFrameOuter = document.getElementById('browser-frame-outer');
   const browserZoomIn = document.getElementById('browser-zoom-in');
   const browserZoomOut = document.getElementById('browser-zoom-out');
   const browserScaleLabel = document.getElementById('browser-scale-label');
@@ -873,7 +883,6 @@
     browserFrame.style.transform = `scale(${browserScale})`;
     browserFrame.style.width = (100 / browserScale) + '%';
     browserFrame.style.height = (BROWSER_BASE_HEIGHT / browserScale) + 'px';
-    browserFrameOuter.style.height = BROWSER_BASE_HEIGHT + 'px';
     browserScaleLabel.textContent = `Escala: ${Math.round(browserScale * 100)}%`;
   }
 
