@@ -196,6 +196,13 @@
     position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-radius:50%;
     background:#ff9f43; border:2px solid var(--panel); cursor:pointer;
   }
+  .link-up{
+    position:absolute; top:-2px; left:-2px; width:14px; height:14px; border-radius:50%;
+    background:#3b82f6; border:2px solid var(--panel); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:8px; line-height:1; color:#fff;
+  }
+  .link-up.disabled{ opacity:0.4; cursor:not-allowed; }
   .link-desc{
     margin-top:8px; font-size:11px; color:var(--text-dim); text-align:center;
     width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -735,6 +742,17 @@
     }
   }
 
+  async function moveLinkUp(link, prevLink){
+    const linkPriority = link.priority;
+    const prevPriority = prevLink.priority;
+    const swappedLink = Object.assign({}, link, { priority: prevPriority });
+    const swappedPrev = Object.assign({}, prevLink, { priority: linkPriority });
+    const [ok1, ok2] = await Promise.all([upsertLink(swappedLink), upsertLink(swappedPrev)]);
+    if(ok1 && ok2){
+      await renderLinks();
+    }
+  }
+
   const LED_COLORS = ['#39FF14', '#FFD700', '#FF3131'];
   function hashLedColor(str){
     let hash = 0;
@@ -747,7 +765,7 @@
     const links = await loadLinks();
     row.innerHTML = '';
 
-    links.forEach(link=>{
+    links.forEach((link, idx)=>{
       const card = document.createElement('div');
       card.className = 'link-card';
 
@@ -772,6 +790,17 @@
         openLinkModal(link);
       });
       avatar.appendChild(dot);
+
+      const upBtn = document.createElement('div');
+      upBtn.className = 'link-up' + (idx === 0 ? ' disabled' : '');
+      upBtn.textContent = '▲';
+      upBtn.title = 'Subir posición';
+      upBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(idx === 0) return;
+        moveLinkUp(link, links[idx - 1]);
+      });
+      avatar.appendChild(upBtn);
 
       const desc = document.createElement('div');
       desc.className = 'link-desc';
