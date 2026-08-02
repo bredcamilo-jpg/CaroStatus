@@ -228,6 +228,17 @@
     font-family:'Space Grotesk', sans-serif; font-size:14px; outline:none;
   }
   #link-modal select:focus, #link-modal input:focus{ border-color:var(--accent); }
+  .banner-color-row{ display:flex; gap:8px; margin-top:2px; }
+  .banner-color-btn{
+    width:28px; height:28px; border-radius:50%; border:2px solid var(--line);
+    cursor:pointer; padding:0; background:var(--panel-2);
+  }
+  .banner-color-btn.auto{
+    width:auto; height:28px; padding:0 10px; border-radius:8px;
+    font-size:11px; color:var(--text-dim); font-family:'Space Grotesk', sans-serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .banner-color-btn.selected{ border-color:var(--accent); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
   #link-cancel-btn{
     background:transparent; border:1px solid var(--line); color:var(--text-dim);
@@ -414,6 +425,15 @@
           <option value="Link">Link</option>
           <option value="AI Tool">AI Tool</option>
         </select>
+      </div>
+      <div class="field">
+        <label>Banner Color</label>
+        <div class="banner-color-row" id="link-banner-color-row">
+          <button type="button" class="banner-color-btn auto" data-color="auto">Auto</button>
+          <button type="button" class="banner-color-btn" data-color="#39FF14" style="background:#39FF14"></button>
+          <button type="button" class="banner-color-btn" data-color="#FFD700" style="background:#FFD700"></button>
+          <button type="button" class="banner-color-btn" data-color="#FF3131" style="background:#FF3131"></button>
+        </div>
       </div>
       <div class="modal-actions">
         <button id="link-delete-btn">Delete</button>
@@ -779,7 +799,8 @@
       const text = link.description || '';
       const unit = text + ' • ';
       marquee.textContent = unit + unit;
-      marquee.style.color = hashLedColor(text);
+      const bannerColor = (link.banner_color && link.banner_color !== 'auto') ? link.banner_color : hashLedColor(text);
+      marquee.style.color = bannerColor;
       clip.appendChild(marquee);
       avatar.appendChild(clip);
 
@@ -847,6 +868,22 @@
   const linkDeleteBtn = document.getElementById('link-delete-btn');
   const linkCancelBtn = document.getElementById('link-cancel-btn');
   const linkSaveBtn = document.getElementById('link-save-btn');
+  const linkBannerColorRow = document.getElementById('link-banner-color-row');
+  const bannerColorBtns = Array.from(linkBannerColorRow.querySelectorAll('.banner-color-btn'));
+  let selectedBannerColor = 'auto';
+
+  function updateBannerColorSelection(){
+    bannerColorBtns.forEach(btn=>{
+      btn.classList.toggle('selected', btn.dataset.color === selectedBannerColor);
+    });
+  }
+
+  bannerColorBtns.forEach(btn=>{
+    btn.addEventListener('click', function(){
+      selectedBannerColor = btn.dataset.color;
+      updateBannerColorSelection();
+    });
+  });
 
   function openLinkModal(link){
     editingLinkId = link ? link.id : null;
@@ -855,6 +892,8 @@
     linkUrlInput.value = link ? link.url : '';
     linkPriorityInput.value = link ? link.priority : 5;
     linkTypeSelect.value = link ? link.type : 'Link';
+    selectedBannerColor = (link && link.banner_color) ? link.banner_color : 'auto';
+    updateBannerColorSelection();
     linkDeleteBtn.style.display = link ? 'inline-block' : 'none';
     linkModalOverlay.style.display = 'flex';
   }
@@ -876,10 +915,11 @@
     if(isNaN(priority)) priority = 5;
     priority = Math.min(10, Math.max(1, priority));
     const type = linkTypeSelect.value;
+    const bannerColor = selectedBannerColor === 'auto' ? null : selectedBannerColor;
 
     if(!description || !url) return;
 
-    const payload = { description, url, priority, type };
+    const payload = { description, url, priority, type, banner_color: bannerColor };
     if(editingLinkId !== null) payload.id = editingLinkId;
 
     const ok = await upsertLink(payload);
