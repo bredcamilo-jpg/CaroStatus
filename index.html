@@ -107,6 +107,10 @@
     padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px;
     font-family:'Space Grotesk', sans-serif;
   }
+  .datetime-row{
+    font-size:11px; letter-spacing:0.04em; color:var(--text-dim);
+    margin-bottom:14px; white-space:nowrap; overflow-x:auto;
+  }
   #logout-btn:hover{ color:var(--text); border-color:var(--text-dim); }
 
   .now-card{
@@ -340,6 +344,8 @@
       <button id="logout-btn">Log out</button>
     </div>
 
+    <div class="datetime-row" id="datetime-row"></div>
+
     <div class="links-card">
       <div class="links-head"><h2>🔗 LINKS</h2></div>
       <div class="links-row" id="links-row"></div>
@@ -482,6 +488,37 @@
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const loginError = document.getElementById('login-error');
+
+  // ---------- DATETIME ----------
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WEEKDAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  function getISOWeek(date){
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+    return 1 + Math.round((d - firstThursday) / (7 * 24 * 3600 * 1000));
+  }
+
+  function updateDatetimeRow(){
+    const el = document.getElementById('datetime-row');
+    if(!el) return;
+    const now = new Date();
+    const week = getISOWeek(now);
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = MONTH_NAMES[now.getMonth()];
+    const year = now.getFullYear();
+    const weekday = WEEKDAY_NAMES[now.getDay()];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    el.textContent = 'Week ' + week + ' | ' + day + ' ' + month + ' ' + year + ' ' + weekday + ' | ' + hours + ':' + minutes;
+  }
+
+  updateDatetimeRow();
+  setInterval(updateDatetimeRow, 60000);
 
   function showDashboard(){
     loginScreen.style.display = 'none';
