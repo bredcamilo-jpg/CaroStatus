@@ -817,8 +817,8 @@
 
       // scrollWidth only reflects real layout once attached to the live DOM (row is already in document)
       const unitWidthPx = marquee.scrollWidth / 2;
-      const PX_PER_SEC = 45;
-      const duration = Math.min(15, Math.max(3, unitWidthPx / PX_PER_SEC));
+      const PX_PER_SEC = 22.5;
+      const duration = Math.min(30, Math.max(6, unitWidthPx / PX_PER_SEC));
       marquee.style.animationDuration = duration + 's';
     });
 
