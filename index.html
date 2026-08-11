@@ -303,6 +303,97 @@
     transform-origin: top left;
   }
 
+  /* ---------- BROWSER MODULES ---------- */
+  .browser-modules-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:22px 24px 18px 24px; margin-bottom:18px;
+  }
+  .browser-modules-head h2{
+    font-size:14px; margin:0 0 14px 0; font-weight:600; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .browser-modules-row{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));
+    gap:18px; padding:2px 2px 8px 2px;
+  }
+  .browser-modules-error-msg{
+    display:none; margin-top:10px; font-size:11.5px; color:var(--expensive);
+  }
+  .browser-module-panel{
+    background:var(--panel-2); border:1px solid var(--line); border-top-width:3px;
+    border-radius:10px; padding:14px 14px 12px 14px;
+  }
+  .browser-module-controls{
+    display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .browser-module-url{
+    flex:1 1 160px; padding:9px 10px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel); color:var(--text);
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; outline:none;
+  }
+  .browser-module-url:focus{ border-color:var(--accent); }
+  .browser-module-scale-label{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-dim); white-space:nowrap;
+  }
+  .browser-module-zoom-btn, .browser-module-edit-btn, .browser-module-up-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:13px; flex:0 0 auto;
+    font-family:'Space Grotesk', sans-serif; display:flex; align-items:center; justify-content:center;
+  }
+  .browser-module-zoom-btn:hover, .browser-module-edit-btn:hover, .browser-module-up-btn:hover{
+    color:var(--text); border-color:var(--text-dim);
+  }
+  .browser-module-up-btn.disabled{ opacity:0.4; cursor:not-allowed; }
+  .browser-module-frame-outer{
+    position:relative; max-width:100%; overflow:hidden;
+    border:1px solid var(--line); border-radius:10px; background:var(--panel);
+  }
+  .browser-module-frame{
+    position:absolute; top:0; left:0; border:0; display:block;
+    transform-origin: top left;
+  }
+  .browser-module-desc{
+    margin-top:8px; font-size:11.5px; color:var(--text-dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .browser-module-add{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:1.5px dashed var(--line); border-top-width:1.5px; background:var(--panel-2);
+    min-height:180px; cursor:pointer; color:var(--text-dim); gap:6px;
+  }
+  .browser-module-add:hover{ color:var(--text); border-color:var(--text-dim); }
+  .browser-module-add .plus{ font-size:28px; }
+
+  /* ---------- BROWSER MODULE MODAL ---------- */
+  #browser-module-modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+    align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  #browser-module-modal{
+    width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:28px; box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  #browser-module-modal h3{ font-size:17px; margin:0 0 20px 0; font-weight:600; letter-spacing:-0.01em; }
+  #browser-module-modal input:focus{ border-color:var(--accent); }
+  #browser-module-cancel-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    padding:10px 16px; border-radius:8px; cursor:pointer; font-size:13px;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  #browser-module-cancel-btn:hover{ color:var(--text); border-color:var(--text-dim); }
+  #browser-module-save-btn{
+    border:none; border-radius:8px; cursor:pointer;
+    background:var(--accent); color:#0f1720; font-weight:600; font-size:13px;
+    padding:10px 18px; font-family:'Space Grotesk', sans-serif;
+  }
+  #browser-module-save-btn:hover{ filter:brightness(1.08); }
+  #browser-module-delete-btn{
+    background:transparent; border:1px solid var(--expensive); color:var(--expensive);
+    padding:10px 14px; border-radius:8px; cursor:pointer; font-size:13px;
+    font-family:'Space Grotesk', sans-serif; margin-right:auto; display:none;
+  }
+  #browser-module-delete-btn:hover{ background:rgba(232,98,79,0.12); }
+
   #load-msg, #error-msg{
     color:var(--text-dim); font-size:13px; padding:20px 0; text-align:center;
   }
@@ -378,6 +469,12 @@
       <div id="browser-frame-outer">
         <iframe id="browser-frame"></iframe>
       </div>
+    </div>
+
+    <div class="browser-modules-card">
+      <div class="browser-modules-head"><h2>🧩 Browser Modules</h2></div>
+      <div class="browser-modules-row" id="browser-modules-row"></div>
+      <div id="browser-modules-error" class="browser-modules-error-msg">Couldn't sync browser modules right now.</div>
     </div>
 
     <div id="load-msg">Loading prices…</div>
@@ -464,6 +561,51 @@
     </div>
   </div>
 
+  <!-- BROWSER MODULE MODAL -->
+  <div id="browser-module-modal-overlay">
+    <div id="browser-module-modal">
+      <h3 id="browser-module-modal-title">Edit Browser Module</h3>
+      <div class="field">
+        <label for="browser-module-description">Description</label>
+        <input id="browser-module-description" type="text" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="browser-module-url">URL</label>
+        <input id="browser-module-url" type="text" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="browser-module-priority">Priority 1-10</label>
+        <input id="browser-module-priority" type="number" min="1" max="10" step="1" />
+      </div>
+      <div class="field">
+        <label for="browser-module-zoom">Zoom/Escala (%)</label>
+        <input id="browser-module-zoom" type="number" min="10" max="200" step="5" />
+      </div>
+      <div class="field">
+        <label for="browser-module-width">Width (px)</label>
+        <input id="browser-module-width" type="number" min="200" step="10" />
+      </div>
+      <div class="field">
+        <label for="browser-module-height">Height (px)</label>
+        <input id="browser-module-height" type="number" min="150" step="10" />
+      </div>
+      <div class="field">
+        <label>Banner Color</label>
+        <div class="banner-color-row" id="browser-module-banner-color-row">
+          <button type="button" class="banner-color-btn auto" data-color="auto">Auto</button>
+          <button type="button" class="banner-color-btn" data-color="#39FF14" style="background:#39FF14"></button>
+          <button type="button" class="banner-color-btn" data-color="#FFD700" style="background:#FFD700"></button>
+          <button type="button" class="banner-color-btn" data-color="#FF3131" style="background:#FF3131"></button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="browser-module-delete-btn">Delete</button>
+        <button id="browser-module-cancel-btn">Cancel</button>
+        <button id="browser-module-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -539,6 +681,7 @@
     loginScreen.style.display = 'none';
     dashboard.style.display = 'block';
     renderLinks();
+    renderBrowserModules();
     loadPrices();
   }
   function showLogin(){
@@ -1024,6 +1167,302 @@
 
   applyBrowserScale();
   loadBrowserUrl();
+
+  // ---------- BROWSER MODULES (data) ----------
+  const browserModulesErrorEl = document.getElementById('browser-modules-error');
+  function showBrowserModulesError(){ browserModulesErrorEl.style.display = 'block'; }
+  function hideBrowserModulesError(){ browserModulesErrorEl.style.display = 'none'; }
+
+  async function loadBrowserModules(){
+    try{
+      const { data, error } = await supabase
+        .from('browser_modules')
+        .select('*')
+        .order('priority', { ascending: true });
+      if(error) throw error;
+      hideBrowserModulesError();
+      return data || [];
+    }catch(err){
+      console.error('Failed to load browser modules from Supabase', err);
+      showBrowserModulesError();
+      return [];
+    }
+  }
+
+  async function upsertBrowserModule(mod){
+    try{
+      const { error } = await supabase.from('browser_modules').upsert(mod);
+      if(error) throw error;
+      hideBrowserModulesError();
+      return true;
+    }catch(err){
+      console.error('Failed to save browser module to Supabase', err);
+      showBrowserModulesError();
+      return false;
+    }
+  }
+
+  async function deleteBrowserModule(id){
+    try{
+      const { error } = await supabase.from('browser_modules').delete().eq('id', id);
+      if(error) throw error;
+      hideBrowserModulesError();
+      return true;
+    }catch(err){
+      console.error('Failed to delete browser module from Supabase', err);
+      showBrowserModulesError();
+      return false;
+    }
+  }
+
+  async function moveBrowserModuleUp(mod, prevMod){
+    const modPriority = mod.priority;
+    const prevPriority = prevMod.priority;
+    const swappedMod = Object.assign({}, mod, { priority: prevPriority });
+    const swappedPrev = Object.assign({}, prevMod, { priority: modPriority });
+    const [ok1, ok2] = await Promise.all([upsertBrowserModule(swappedMod), upsertBrowserModule(swappedPrev)]);
+    if(ok1 && ok2){
+      await renderBrowserModules();
+    }
+  }
+
+  // Transient (unsaved) quick-nav / quick-zoom overrides per module, keyed by id.
+  // Mirrors the original Browser panel's non-persisted url/scale controls.
+  const browserModuleTransient = {};
+
+  function applyModulePanelScale(mod, frameOuter, frame){
+    const state = browserModuleTransient[mod.id] || {};
+    const zoomPercent = state.zoom != null ? state.zoom : mod.zoom;
+    const scale = Math.max(0.1, zoomPercent / 100);
+    frameOuter.style.width = mod.width + 'px';
+    frameOuter.style.height = mod.height + 'px';
+    frame.style.width = (100 / scale) + '%';
+    frame.style.height = (mod.height / scale) + 'px';
+    frame.style.transform = `scale(${scale})`;
+  }
+
+  async function renderBrowserModules(){
+    const row = document.getElementById('browser-modules-row');
+    const modules = await loadBrowserModules();
+    row.innerHTML = '';
+
+    modules.forEach((mod, idx)=>{
+      const panel = document.createElement('div');
+      panel.className = 'browser-module-panel';
+      const bannerColor = (mod.banner_color && mod.banner_color !== 'auto') ? mod.banner_color : hashLedColor(mod.description || '');
+      panel.style.borderTopColor = bannerColor;
+
+      const controls = document.createElement('div');
+      controls.className = 'browser-module-controls';
+
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'browser-module-up-btn' + (idx === 0 ? ' disabled' : '');
+      upBtn.textContent = '▲';
+      upBtn.title = 'Subir posición';
+      upBtn.addEventListener('click', function(){
+        if(idx === 0) return;
+        moveBrowserModuleUp(mod, modules[idx - 1]);
+      });
+      controls.appendChild(upBtn);
+
+      const urlInput = document.createElement('input');
+      urlInput.type = 'url';
+      urlInput.className = 'browser-module-url mono';
+      const navState = browserModuleTransient[mod.id] || {};
+      urlInput.value = navState.url != null ? navState.url : mod.url;
+      controls.appendChild(urlInput);
+
+      const zoomOutBtn = document.createElement('button');
+      zoomOutBtn.type = 'button';
+      zoomOutBtn.className = 'browser-module-zoom-btn';
+      zoomOutBtn.textContent = '▼';
+      zoomOutBtn.title = 'Zoom out';
+      controls.appendChild(zoomOutBtn);
+
+      const zoomInBtn = document.createElement('button');
+      zoomInBtn.type = 'button';
+      zoomInBtn.className = 'browser-module-zoom-btn';
+      zoomInBtn.textContent = '▲';
+      zoomInBtn.title = 'Zoom in';
+      controls.appendChild(zoomInBtn);
+
+      const scaleLabel = document.createElement('span');
+      scaleLabel.className = 'browser-module-scale-label mono';
+      controls.appendChild(scaleLabel);
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'browser-module-edit-btn';
+      editBtn.textContent = '✎';
+      editBtn.title = 'Editar módulo';
+      editBtn.addEventListener('click', function(){
+        openBrowserModuleModal(mod);
+      });
+      controls.appendChild(editBtn);
+
+      const frameOuter = document.createElement('div');
+      frameOuter.className = 'browser-module-frame-outer';
+      const frame = document.createElement('iframe');
+      frame.className = 'browser-module-frame';
+      frameOuter.appendChild(frame);
+
+      function refreshScaleLabel(){
+        const state = browserModuleTransient[mod.id] || {};
+        const zoomPercent = state.zoom != null ? state.zoom : mod.zoom;
+        scaleLabel.textContent = `Escala: ${zoomPercent}%`;
+      }
+
+      function loadFrameUrl(){
+        const url = urlInput.value.trim();
+        if(url){
+          frame.src = url;
+          browserModuleTransient[mod.id] = Object.assign({}, browserModuleTransient[mod.id], { url });
+        }
+      }
+
+      urlInput.addEventListener('change', loadFrameUrl);
+      zoomOutBtn.addEventListener('click', function(){
+        const state = browserModuleTransient[mod.id] || {};
+        const current = state.zoom != null ? state.zoom : mod.zoom;
+        const next = Math.max(10, current - 10);
+        browserModuleTransient[mod.id] = Object.assign({}, state, { zoom: next });
+        applyModulePanelScale(mod, frameOuter, frame);
+        refreshScaleLabel();
+      });
+      zoomInBtn.addEventListener('click', function(){
+        const state = browserModuleTransient[mod.id] || {};
+        const current = state.zoom != null ? state.zoom : mod.zoom;
+        const next = Math.min(200, current + 10);
+        browserModuleTransient[mod.id] = Object.assign({}, state, { zoom: next });
+        applyModulePanelScale(mod, frameOuter, frame);
+        refreshScaleLabel();
+      });
+
+      const desc = document.createElement('div');
+      desc.className = 'browser-module-desc';
+      desc.textContent = mod.description || '';
+
+      panel.appendChild(controls);
+      panel.appendChild(frameOuter);
+      panel.appendChild(desc);
+      row.appendChild(panel);
+
+      applyModulePanelScale(mod, frameOuter, frame);
+      refreshScaleLabel();
+      loadFrameUrl();
+    });
+
+    const addCard = document.createElement('div');
+    addCard.className = 'browser-module-panel browser-module-add';
+    const plus = document.createElement('div');
+    plus.className = 'plus';
+    plus.textContent = '+';
+    const addLabel = document.createElement('div');
+    addLabel.textContent = 'Add Browser Module';
+    addCard.appendChild(plus);
+    addCard.appendChild(addLabel);
+    addCard.addEventListener('click', function(){
+      openBrowserModuleModal(null);
+    });
+    row.appendChild(addCard);
+  }
+
+  // ---------- BROWSER MODULE MODAL ----------
+  let editingBrowserModuleId = null;
+  const browserModuleModalOverlay = document.getElementById('browser-module-modal-overlay');
+  const browserModuleModalTitle = document.getElementById('browser-module-modal-title');
+  const browserModuleDescriptionInput = document.getElementById('browser-module-description');
+  const browserModuleUrlInput = document.getElementById('browser-module-url');
+  const browserModulePriorityInput = document.getElementById('browser-module-priority');
+  const browserModuleZoomInput = document.getElementById('browser-module-zoom');
+  const browserModuleWidthInput = document.getElementById('browser-module-width');
+  const browserModuleHeightInput = document.getElementById('browser-module-height');
+  const browserModuleDeleteBtn = document.getElementById('browser-module-delete-btn');
+  const browserModuleCancelBtn = document.getElementById('browser-module-cancel-btn');
+  const browserModuleSaveBtn = document.getElementById('browser-module-save-btn');
+  const browserModuleBannerColorRow = document.getElementById('browser-module-banner-color-row');
+  const browserModuleBannerColorBtns = Array.from(browserModuleBannerColorRow.querySelectorAll('.banner-color-btn'));
+  let selectedBrowserModuleBannerColor = 'auto';
+
+  function updateBrowserModuleBannerColorSelection(){
+    browserModuleBannerColorBtns.forEach(btn=>{
+      btn.classList.toggle('selected', btn.dataset.color === selectedBrowserModuleBannerColor);
+    });
+  }
+
+  browserModuleBannerColorBtns.forEach(btn=>{
+    btn.addEventListener('click', function(){
+      selectedBrowserModuleBannerColor = btn.dataset.color;
+      updateBrowserModuleBannerColorSelection();
+    });
+  });
+
+  function openBrowserModuleModal(mod){
+    editingBrowserModuleId = mod ? mod.id : null;
+    browserModuleModalTitle.textContent = mod ? 'Edit Browser Module' : 'Add Browser Module';
+    browserModuleDescriptionInput.value = mod ? mod.description : '';
+    browserModuleUrlInput.value = mod ? mod.url : 'https://';
+    browserModulePriorityInput.value = mod ? mod.priority : 5;
+    browserModuleZoomInput.value = mod ? mod.zoom : 50;
+    browserModuleWidthInput.value = mod ? mod.width : 800;
+    browserModuleHeightInput.value = mod ? mod.height : 520;
+    selectedBrowserModuleBannerColor = (mod && mod.banner_color) ? mod.banner_color : 'auto';
+    updateBrowserModuleBannerColorSelection();
+    browserModuleDeleteBtn.style.display = mod ? 'inline-block' : 'none';
+    browserModuleModalOverlay.style.display = 'flex';
+  }
+
+  function closeBrowserModuleModal(){
+    browserModuleModalOverlay.style.display = 'none';
+    editingBrowserModuleId = null;
+  }
+
+  browserModuleCancelBtn.addEventListener('click', closeBrowserModuleModal);
+  browserModuleModalOverlay.addEventListener('click', function(e){
+    if(e.target === browserModuleModalOverlay) closeBrowserModuleModal();
+  });
+
+  browserModuleSaveBtn.addEventListener('click', async function(){
+    const description = browserModuleDescriptionInput.value.trim();
+    const url = browserModuleUrlInput.value.trim();
+    let priority = parseInt(browserModulePriorityInput.value, 10);
+    if(isNaN(priority)) priority = 5;
+    priority = Math.min(10, Math.max(1, priority));
+    let zoom = parseInt(browserModuleZoomInput.value, 10);
+    if(isNaN(zoom)) zoom = 50;
+    zoom = Math.min(200, Math.max(10, zoom));
+    let width = parseInt(browserModuleWidthInput.value, 10);
+    if(isNaN(width) || width <= 0) width = 800;
+    let height = parseInt(browserModuleHeightInput.value, 10);
+    if(isNaN(height) || height <= 0) height = 520;
+    const bannerColor = selectedBrowserModuleBannerColor === 'auto' ? null : selectedBrowserModuleBannerColor;
+
+    if(!description || !url) return;
+
+    const payload = { description, url, priority, zoom, width, height, banner_color: bannerColor };
+    if(editingBrowserModuleId !== null){
+      payload.id = editingBrowserModuleId;
+      delete browserModuleTransient[editingBrowserModuleId];
+    }
+
+    const ok = await upsertBrowserModule(payload);
+    if(ok){
+      await renderBrowserModules();
+      closeBrowserModuleModal();
+    }
+  });
+
+  browserModuleDeleteBtn.addEventListener('click', async function(){
+    if(editingBrowserModuleId === null) return;
+    if(!confirm('Delete this browser module?')) return;
+    const ok = await deleteBrowserModule(editingBrowserModuleId);
+    if(ok){
+      delete browserModuleTransient[editingBrowserModuleId];
+      await renderBrowserModules();
+      closeBrowserModuleModal();
+    }
+  });
 })();
 </script>
 </body>
