@@ -322,7 +322,7 @@
   }
   .browser-module-panel{
     background:var(--panel-2); border:1px solid var(--line); border-top-width:3px;
-    border-radius:10px; padding:14px 14px 12px 14px;
+    border-radius:10px; padding:14px 14px 12px 14px; position:relative;
   }
   .browser-module-controls{
     display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;
@@ -336,15 +336,26 @@
   .browser-module-scale-label{
     font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-dim); white-space:nowrap;
   }
-  .browser-module-zoom-btn, .browser-module-edit-btn, .browser-module-up-btn{
+  .browser-module-zoom-btn{
     background:transparent; border:1px solid var(--line); color:var(--text-dim);
     width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:13px; flex:0 0 auto;
     font-family:'Space Grotesk', sans-serif; display:flex; align-items:center; justify-content:center;
   }
-  .browser-module-zoom-btn:hover, .browser-module-edit-btn:hover, .browser-module-up-btn:hover{
+  .browser-module-zoom-btn:hover{
     color:var(--text); border-color:var(--text-dim);
   }
-  .browser-module-up-btn.disabled{ opacity:0.4; cursor:not-allowed; }
+  /* Same visual pattern as LINKS' .link-dot / .link-up corner circles, anchored to the panel instead of an avatar */
+  .browser-module-edit-dot{
+    position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-radius:50%;
+    background:#ff9f43; border:2px solid var(--panel); cursor:pointer;
+  }
+  .browser-module-up-dot{
+    position:absolute; top:-2px; left:-2px; width:14px; height:14px; border-radius:50%;
+    background:#3b82f6; border:2px solid var(--panel); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:8px; line-height:1; color:#fff;
+  }
+  .browser-module-up-dot.disabled{ opacity:0.4; cursor:not-allowed; }
   .browser-module-frame-outer{
     position:relative; max-width:100%; overflow:hidden;
     border:1px solid var(--line); border-radius:10px; background:var(--panel);
@@ -1253,19 +1264,28 @@
       const bannerColor = (mod.banner_color && mod.banner_color !== 'auto') ? mod.banner_color : hashLedColor(mod.description || '');
       panel.style.borderTopColor = bannerColor;
 
-      const controls = document.createElement('div');
-      controls.className = 'browser-module-controls';
-
-      const upBtn = document.createElement('button');
-      upBtn.type = 'button';
-      upBtn.className = 'browser-module-up-btn' + (idx === 0 ? ' disabled' : '');
-      upBtn.textContent = '▲';
-      upBtn.title = 'Subir posición';
-      upBtn.addEventListener('click', function(){
+      const upDot = document.createElement('div');
+      upDot.className = 'browser-module-up-dot' + (idx === 0 ? ' disabled' : '');
+      upDot.textContent = '▲';
+      upDot.title = 'Subir posición';
+      upDot.addEventListener('click', function(e){
+        e.stopPropagation();
         if(idx === 0) return;
         moveBrowserModuleUp(mod, modules[idx - 1]);
       });
-      controls.appendChild(upBtn);
+      panel.appendChild(upDot);
+
+      const editDot = document.createElement('div');
+      editDot.className = 'browser-module-edit-dot';
+      editDot.title = 'Editar módulo';
+      editDot.addEventListener('click', function(e){
+        e.stopPropagation();
+        openBrowserModuleModal(mod);
+      });
+      panel.appendChild(editDot);
+
+      const controls = document.createElement('div');
+      controls.className = 'browser-module-controls';
 
       const urlInput = document.createElement('input');
       urlInput.type = 'url';
@@ -1291,16 +1311,6 @@
       const scaleLabel = document.createElement('span');
       scaleLabel.className = 'browser-module-scale-label mono';
       controls.appendChild(scaleLabel);
-
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'browser-module-edit-btn';
-      editBtn.textContent = '✎';
-      editBtn.title = 'Editar módulo';
-      editBtn.addEventListener('click', function(){
-        openBrowserModuleModal(mod);
-      });
-      controls.appendChild(editBtn);
 
       const frameOuter = document.createElement('div');
       frameOuter.className = 'browser-module-frame-outer';
